@@ -42,10 +42,11 @@ func (ins Instructions) fmtInstruction(def *Definition, operands []int) string {
 
 // Opcode: like a function
 // Operand: like a function's arguments
+// opcode range: 0 - 255
 type Opcode byte
 
 const (
-	// start from 0, increase by byte
+	// start from 0, increase by bit
     // one byte for each opcode
 	OpConstant Opcode = iota
 )
@@ -61,6 +62,7 @@ var definitions = map[Opcode]*Definition{
 	OpConstant: {"OpConstant", []int{2}},
 }
 
+// loop up opcode definition
 func Lookup(op byte) (*Definition, error) {
 	def, ok := definitions[Opcode(op)]
 	if !ok {
