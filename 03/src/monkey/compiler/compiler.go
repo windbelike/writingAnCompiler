@@ -3,9 +3,9 @@ package compiler
 import (
 	"fmt"
 
-	"sawyer.com/v2/src/monkey/ast"
-	"sawyer.com/v2/src/monkey/code"
-	"sawyer.com/v2/src/monkey/object"
+	"sawyer.com/v3/src/monkey/ast"
+	"sawyer.com/v3/src/monkey/code"
+	"sawyer.com/v3/src/monkey/object"
 )
 
 type Compiler struct {
@@ -76,6 +76,12 @@ func (c *Compiler) Compile(node ast.Node) error {
 		// save integer to constant pool
 		// emit the opcode instruction
 		c.emit(code.OpConstant, c.addConstant(integer))
+	case *ast.Boolean:
+		if node.Value {
+			c.emit(code.OpTrue)
+		} else {
+			c.emit(code.OpFalse)
+		}
 	}
 	return nil
 }

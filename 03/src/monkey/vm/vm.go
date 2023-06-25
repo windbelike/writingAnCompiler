@@ -3,12 +3,15 @@ package vm
 import (
 	"fmt"
 
-	"sawyer.com/v2/src/monkey/code"
-	"sawyer.com/v2/src/monkey/compiler"
-	"sawyer.com/v2/src/monkey/object"
+	"sawyer.com/v3/src/monkey/code"
+	"sawyer.com/v3/src/monkey/compiler"
+	"sawyer.com/v3/src/monkey/object"
 )
 
 const StackSize = 2048
+
+var True = &object.Boolean{Value: true}
+var False = &object.Boolean{Value: false}
 
 type VM struct {
 	constants    []object.Object
@@ -38,6 +41,17 @@ func (vm *VM) Run() error {
 			}
 		case code.OpPop:
 			vm.pop()
+		case code.OpTrue:
+			err := vm.push(True)
+			if err != nil {
+				return err
+			}
+		case code.OpFalse:
+			err := vm.push(False)
+			if err != nil {
+				return err
+			}
+
 		}
 	}
 	return nil
@@ -81,7 +95,7 @@ func (vm *VM) LastPoppedStackElem() object.Object {
 }
 
 func (vm *VM) executeBinaryOperation(op code.Opcode) error {
-    // worth to note
+	// worthy to note
 	right := vm.pop()
 	left := vm.pop()
 	leftType := left.Type()

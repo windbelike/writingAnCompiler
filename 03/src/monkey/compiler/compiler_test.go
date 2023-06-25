@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"testing"
 
-	"sawyer.com/v2/src/monkey/ast"
-	"sawyer.com/v2/src/monkey/code"
-	"sawyer.com/v2/src/monkey/lexer"
-	"sawyer.com/v2/src/monkey/object"
-	"sawyer.com/v2/src/monkey/parser"
+	"sawyer.com/v3/src/monkey/ast"
+	"sawyer.com/v3/src/monkey/code"
+	"sawyer.com/v3/src/monkey/lexer"
+	"sawyer.com/v3/src/monkey/object"
+	"sawyer.com/v3/src/monkey/parser"
 )
 
 type compilerTestCase struct {
@@ -155,4 +155,26 @@ func testIntegerObject(expected int64, actual object.Object) error {
 			result.Value, expected)
 	}
 	return nil
+}
+
+func TestBooleanExpressions(t *testing.T) {
+	tests := []compilerTestCase{
+		{
+			input:             "true",
+			expectedConstants: []interface{}{},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpTrue),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input: "false",
+            expectedConstants: []interface{}{},
+            expectedInstructions: []code.Instructions{
+				code.Make(code.OpFalse),
+				code.Make(code.OpPop),
+			},
+		},
+	}
+	runCompilerTests(t, tests)
 }

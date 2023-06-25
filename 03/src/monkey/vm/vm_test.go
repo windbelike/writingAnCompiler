@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"testing"
 
-	"sawyer.com/v2/src/monkey/ast"
-	"sawyer.com/v2/src/monkey/compiler"
-	"sawyer.com/v2/src/monkey/lexer"
-	"sawyer.com/v2/src/monkey/object"
-	"sawyer.com/v2/src/monkey/parser"
+	"sawyer.com/v3/src/monkey/ast"
+	"sawyer.com/v3/src/monkey/compiler"
+	"sawyer.com/v3/src/monkey/lexer"
+	"sawyer.com/v3/src/monkey/object"
+	"sawyer.com/v3/src/monkey/parser"
 )
 
 func parse(input string) *ast.Program {
@@ -64,6 +64,11 @@ func testExpectedObject(t *testing.T,
 		if err != nil {
 			t.Errorf("testIntegerObject failed: %s", err)
 		}
+	case bool:
+		err := testBooleanObject(bool(expected), actual)
+		if err != nil {
+			t.Errorf("testBooleanObject failed: %s", err)
+		}
 	}
 }
 
@@ -84,4 +89,25 @@ func TestIntegerArithmetic(t *testing.T) {
 	}
 
 	runVmTests(t, tests)
+}
+
+func TestBooleanExpressions(t *testing.T) {
+    fmt.Println("run here")
+	tests := []vmTestCase{
+		{"true", true},
+		{"false", false},
+	}
+	runVmTests(t, tests)
+}
+
+func testBooleanObject(expected bool, actual object.Object) error {
+	result, ok := actual.(*object.Boolean)
+	if !ok {
+		return fmt.Errorf("object is not Boolean. got=%T (%+v)", actual, actual)
+	}
+	if result.Value != expected {
+		return fmt.Errorf("object has wrong value. got=%t, want=%t",
+			result.Value, expected)
+	}
+	return nil
 }
