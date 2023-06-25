@@ -16,6 +16,11 @@ func TestMake(t *testing.T) {
 			[]int{65534},
 			[]byte{byte(OpConstant), 255, 254}, // 65534 big endian
 		},
+		{
+			OpAdd,
+            []int{},
+            []byte{byte(OpAdd)},
+		},
 	}
 	for _, tt := range tests {
 		instruction := Make(tt.op, tt.operands...)
@@ -34,23 +39,23 @@ func TestMake(t *testing.T) {
 
 // fmt see: https://pkg.go.dev/fmt
 func TestPrintf(t *testing.T) {
-    bytecodes := Make(OpConstant, 65535)
+	bytecodes := Make(OpConstant, 65535)
 
-    fmt.Printf("%4b \n", bytecodes)
-    fmt.Println((Instructions(bytecodes)))
+	fmt.Printf("%4b \n", bytecodes)
+	fmt.Println((Instructions(bytecodes)))
 }
 
 func TestInstructionsString(t *testing.T) {
 	instructions := []Instructions{
-		Make(OpConstant, 1),
+        Make(OpAdd),
 		Make(OpConstant, 2),
 		Make(OpConstant, 65535),
 	}
-	expected := `0000 OpConstant 1
-0003 OpConstant 2
-0006 OpConstant 65535
+	expected := `0000 OpAdd
+0001 OpConstant 2
+0004 OpConstant 65535
 `
-    // bytecode slice
+	// bytecode slice
 	concatted := Instructions{}
 	for _, ins := range instructions {
 		concatted = append(concatted, ins...)

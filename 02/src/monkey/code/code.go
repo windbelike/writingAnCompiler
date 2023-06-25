@@ -20,7 +20,7 @@ func (ins Instructions) String() string {
 			continue
 		}
 		operands, read := ReadOperands(def, ins[i+1:])
-        // i is the starting-position of an instruction
+		// i is the starting-position of an instruction
 		fmt.Fprintf(&out, "%04d %s\n", i, ins.fmtInstruction(def, operands))
 		i += 1 + read
 	}
@@ -34,6 +34,8 @@ func (ins Instructions) fmtInstruction(def *Definition, operands []int) string {
 			len(operands), operandCount)
 	}
 	switch operandCount {
+	case 0:
+		return def.Name
 	case 1:
 		return fmt.Sprintf("%s %d", def.Name, operands[0])
 	}
@@ -47,8 +49,9 @@ type Opcode byte
 
 const (
 	// start from 0, increase by bit
-    // one byte for each opcode
+	// one byte for each opcode
 	OpConstant Opcode = iota
+	OpAdd
 )
 
 // definition for opcode
@@ -60,6 +63,7 @@ type Definition struct {
 var definitions = map[Opcode]*Definition{
 	// limits constant's maximum number to 65536
 	OpConstant: {"OpConstant", []int{2}},
+	OpAdd:      {"OpAdd", []int{}},
 }
 
 // loop up opcode definition

@@ -5,19 +5,18 @@ import (
 	"fmt"
 	"io"
 
-	"sawyer.com/v2/src/monkey/evaluator"
+	"sawyer.com/v2/src/monkey/compiler"
 	"sawyer.com/v2/src/monkey/lexer"
-	"sawyer.com/v2/src/monkey/object"
 	"sawyer.com/v2/src/monkey/parser"
+	"sawyer.com/v2/src/monkey/vm"
 )
 
 const PROMPT = ">> "
 
 func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
-	env := object.NewEnvironment()
 	for {
-		fmt.Printf(PROMPT)
+		fmt.Fprintf(out, PROMPT)
 		scanned := scanner.Scan()
 		if !scanned {
 			return
@@ -30,11 +29,21 @@ func Start(in io.Reader, out io.Writer) {
 			printParserErrors(out, p.Errors())
 			continue
 		}
-		evaluated := evaluator.Eval(program, env)
-		if evaluated != nil {
-			io.WriteString(out, evaluated.Inspect())
-			io.WriteString(out, "\n")
+		comp := compiler.New()
+		err := comp.Compile(program)
+		if err != nil {
+			fmt.Fprintf(out, "Woops! Compilation failed:\n %s\n", err)
+			continue
 		}
+		machine := vm.New(comp.Bytecode())
+		err = machine.Run()
+		if err != nil {
+			fmt.Fprintf(out, "Woops! Executing bytecode failed:\n %s\n", err)
+			continue
+		}
+		stackTop := machine.StackTop()
+		io.WriteString(out, stackTop.Inspect())
+		io.WriteString(out, "\n")
 	}
 }
 

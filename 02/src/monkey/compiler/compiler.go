@@ -1,6 +1,8 @@
 package compiler
 
 import (
+	"fmt"
+
 	"sawyer.com/v2/src/monkey/ast"
 	"sawyer.com/v2/src/monkey/code"
 	"sawyer.com/v2/src/monkey/object"
@@ -54,11 +56,18 @@ func (c *Compiler) Compile(node ast.Node) error {
 		if err != nil {
 			return err
 		}
+
+		switch node.Operator {
+		case "+":
+			c.emit(code.OpAdd)
+		default:
+			return fmt.Errorf("unknown operator %s", node.Operator)
+		}
 	case *ast.IntegerLiteral:
 		integer := &object.Integer{Value: node.Value}
-        // save integer to constant pool
-        // emit the opcode instruction
-        c.emit(code.OpConstant, c.addConstant(integer))
+		// save integer to constant pool
+		// emit the opcode instruction
+		c.emit(code.OpConstant, c.addConstant(integer))
 	}
 	return nil
 }
