@@ -52,6 +52,7 @@ const (
 	// one byte for each opcode
 	OpConstant Opcode = iota
 	OpAdd
+    OpPop
 )
 
 // definition for opcode
@@ -64,6 +65,7 @@ var definitions = map[Opcode]*Definition{
 	// limits constant's maximum number to 65536
 	OpConstant: {"OpConstant", []int{2}},
 	OpAdd:      {"OpAdd", []int{}},
+    OpPop:      {"OpPop", []int{}},
 }
 
 // loop up opcode definition
