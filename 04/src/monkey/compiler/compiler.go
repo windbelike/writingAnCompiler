@@ -9,14 +9,18 @@ import (
 )
 
 type Compiler struct {
-	instructions code.Instructions
-	constants    []object.Object // constants pool
+	instructions        code.Instructions
+	constants           []object.Object // constants pool
+	lastInstruction     EmittedInstruction
+	previousInstruction EmittedInstruction
 }
 
 func New() *Compiler {
 	return &Compiler{
-		instructions: code.Instructions{},
-		constants:    []object.Object{},
+		instructions:        code.Instructions{},
+		constants:           []object.Object{},
+		lastInstruction:     EmittedInstruction{},
+		previousInstruction: EmittedInstruction{},
 	}
 }
 
@@ -30,6 +34,11 @@ func (c *Compiler) Bytecode() *Bytecode {
 type Bytecode struct {
 	Instructions code.Instructions
 	Constants    []object.Object
+}
+
+type EmittedInstruction struct {
+	Opcode   code.Opcode
+	Position int // position the opcode emitted to
 }
 
 // compile AST to bytecode instructions
@@ -47,7 +56,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 		if err != nil {
 			return err
 		}
-		// at the end of every expression statement
+		// Noteworthy: at the end of every expression statement
 		// emit a pop stack opcode
 		c.emit(code.OpPop)
 	case *ast.PrefixExpression:
@@ -110,10 +119,42 @@ func (c *Compiler) Compile(node ast.Node) error {
 			return err
 		}
 		// Emit an `OpJumpNotTruthy` with a bogus value
-		c.emit(code.OpJumpNotTruthy, 9999)
+		jumpNotTruthyPos := c.emit(code.OpJumpNotTruthy, 9999)
 		err = c.Compile(node.Consequence)
 		if err != nil {
 			return err
+		}
+
+		// remove redundant pop emitted by compile expressionStatement
+		if c.lastInstructionIsPop() {
+			c.removeLastPop()
+		}
+
+		if node.Alternative == nil {
+            // no ALTERNATIVE
+			// The end of CONSEQUENCE 
+			// Substitute the OpJumpNotTruthy's operand
+			afterConsequencePos := len(c.instructions)
+			c.changeOperand(jumpNotTruthyPos, afterConsequencePos)
+		} else {
+            // has an ALTERNATIVE
+			// The end of CONSEQUENCE 
+			// Substitute the OpJumpNotTruthy's operand
+            jumpPos := c.emit(code.OpJump, 9999)
+			afterConsequencePos := len(c.instructions)
+			c.changeOperand(jumpNotTruthyPos, afterConsequencePos)
+			err := c.Compile(node.Alternative)
+			if err != nil {
+				return err
+			}
+            // remove redundant pop emitted by compile expressionStatement
+			if c.lastInstructionIsPop() {
+				c.removeLastPop()
+			}
+			// The end of ALTERNATIVE 
+			// Substitute the OpJump's operand
+			afterAlternativePos := len(c.instructions)
+			c.changeOperand(jumpPos, afterAlternativePos)
 		}
 	case *ast.BlockStatement:
 		for _, s := range node.Statements {
@@ -147,6 +188,7 @@ func (c *Compiler) addConstant(obj object.Object) int {
 func (c *Compiler) emit(op code.Opcode, operands ...int) int {
 	ins := code.Make(op, operands...)
 	pos := c.addInstruction(ins)
+	c.setLastInstruction(op, pos)
 	return pos
 }
 
@@ -154,4 +196,34 @@ func (c *Compiler) addInstruction(ins []byte) int {
 	posNewInstruction := len(c.instructions)
 	c.instructions = append(c.instructions, ins...)
 	return posNewInstruction
+}
+
+func (c *Compiler) setLastInstruction(op code.Opcode, pos int) {
+	previous := c.lastInstruction
+	last := EmittedInstruction{Opcode: op, Position: pos}
+	c.previousInstruction = previous
+	c.lastInstruction = last
+}
+
+func (c *Compiler) lastInstructionIsPop() bool {
+	return c.lastInstruction.Opcode == code.OpPop
+}
+
+func (c *Compiler) removeLastPop() {
+	// cut off the last instruction
+	c.instructions = c.instructions[:c.lastInstruction.Position]
+	c.lastInstruction = c.previousInstruction
+}
+
+func (c *Compiler) replaceInstruction(pos int, newInstruction []byte) {
+	for i := 0; i < len(newInstruction); i++ {
+		c.instructions[pos+i] = newInstruction[i]
+	}
+}
+
+// assumption: we only replace instructions of the same type
+func (c *Compiler) changeOperand(opPos int, operand int) {
+	op := code.Opcode(c.instructions[opPos])
+	newInstruction := code.Make(op, operand)
+	c.replaceInstruction(opPos, newInstruction)
 }
