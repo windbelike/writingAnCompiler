@@ -12,6 +12,7 @@ const StackSize = 2048
 
 var True = &object.Boolean{Value: true}
 var False = &object.Boolean{Value: false}
+var Null = &object.Null{}
 
 type VM struct {
 	constants    []object.Object
@@ -32,14 +33,11 @@ func (vm *VM) Run() error {
 		fmt.Println(vm.constants[i].Inspect())
 	}
 	for ip := 0; ip < len(vm.instructions); ip++ {
+        // fmt.Println("ip:", ip)
 		op := code.Opcode(vm.instructions[ip])
 		switch op {
 		case code.OpConstant:
-			fmt.Println("ip:", ip)
 			constIndex := code.ReadUint16(vm.instructions[ip+1:])
-			fmt.Println("byte0:", vm.instructions[ip+1])
-			fmt.Println("byte1:", vm.instructions[ip+2])
-			fmt.Println("constIndex:", constIndex)
 			ip += 2
 			err := vm.push(vm.constants[constIndex])
 			if err != nil {
@@ -85,8 +83,13 @@ func (vm *VM) Run() error {
 			ip += 2
 			condition := vm.pop()
 			if !isTruthy(condition) {
-                // jump to ALTERNATIVE
+				// jump to ALTERNATIVE
 				ip = pos - 1
+			}
+		case code.OpNull:
+			err := vm.push(Null)
+			if err != nil {
+				return err
 			}
 
 		}

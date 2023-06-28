@@ -124,38 +124,27 @@ func (c *Compiler) Compile(node ast.Node) error {
 		if err != nil {
 			return err
 		}
-
 		// remove redundant pop emitted by compile expressionStatement
 		if c.lastInstructionIsPop() {
 			c.removeLastPop()
 		}
-
+		// Emit an `OpJump` with a bogus value
+		jumpPos := c.emit(code.OpJump, 9999)
+		afterConsequencePos := len(c.instructions)
+		c.changeOperand(jumpNotTruthyPos, afterConsequencePos)
 		if node.Alternative == nil {
-            // no ALTERNATIVE
-			// The end of CONSEQUENCE 
-			// Substitute the OpJumpNotTruthy's operand
-			afterConsequencePos := len(c.instructions)
-			c.changeOperand(jumpNotTruthyPos, afterConsequencePos)
+			c.emit(code.OpNull)
 		} else {
-            // has an ALTERNATIVE
-			// The end of CONSEQUENCE 
-			// Substitute the OpJumpNotTruthy's operand
-            jumpPos := c.emit(code.OpJump, 9999)
-			afterConsequencePos := len(c.instructions)
-			c.changeOperand(jumpNotTruthyPos, afterConsequencePos)
 			err := c.Compile(node.Alternative)
 			if err != nil {
 				return err
 			}
-            // remove redundant pop emitted by compile expressionStatement
 			if c.lastInstructionIsPop() {
 				c.removeLastPop()
 			}
-			// The end of ALTERNATIVE 
-			// Substitute the OpJump's operand
-			afterAlternativePos := len(c.instructions)
-			c.changeOperand(jumpPos, afterAlternativePos)
 		}
+		afterAlternativePos := len(c.instructions)
+		c.changeOperand(jumpPos, afterAlternativePos)
 	case *ast.BlockStatement:
 		for _, s := range node.Statements {
 			err := c.Compile(s)

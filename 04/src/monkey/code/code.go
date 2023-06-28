@@ -33,6 +33,7 @@ const (
 	OpBang
 	OpJumpNotTruthy
 	OpJump
+	OpNull
 )
 
 // definition for opcode
@@ -58,6 +59,7 @@ var definitions = map[Opcode]*Definition{
 	OpBang:          {"OpBang", []int{}},
 	OpJumpNotTruthy: {"OpJumpNotTruthy", []int{2}},
 	OpJump:          {"OpJump", []int{2}},
+	OpNull:          {"OpNull", []int{}},
 }
 
 // loop up opcode definition
@@ -150,5 +152,5 @@ func (ins Instructions) fmtInstruction(def *Definition, operands []int) string {
 }
 
 func (ins Instructions) PrintBytes() {
-    fmt.Printf("Instruction bytes:%b\n", ins)
+	fmt.Printf("Instruction bytes:%b\n", ins)
 }

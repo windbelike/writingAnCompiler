@@ -69,6 +69,16 @@ func testExpectedObject(t *testing.T,
 		if err != nil {
 			t.Errorf("testBooleanObject failed: %s", err)
 		}
+	case *object.Null:
+		if actual != Null {
+            // %T print type
+            // %v print the value in a default format
+            // %+v print struct with fiedls namek
+            // %q safely escaped with Go syntax
+            // %b base 2
+            // %X base 16
+			t.Errorf("object is not Null: %T (%+v)", actual, actual)
+		}
 	}
 }
 
@@ -148,6 +158,8 @@ func TestConditionals(t *testing.T) {
 		{"if (1 < 2) { 10 }", 10},
 		{"if (1 < 2) { 10 } else { 20 }", 10},
 		{"if (1 > 2) { 10 } else { 20 }", 20},
+		{"if (1 > 2) { 10 }", Null},
+		{"if (false) { 10 }", Null},
 	}
 	runVmTests(t, tests)
 }
