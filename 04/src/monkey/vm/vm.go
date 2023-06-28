@@ -24,6 +24,7 @@ type VM struct {
 // Heart of Virtual Machine: fetch-decode-execute cycle
 func (vm *VM) Run() error {
 	// instruction pointer
+	fmt.Println("instructions: ", vm.instructions)
 	for ip := 0; ip < len(vm.instructions); ip++ {
 		op := code.Opcode(vm.instructions[ip])
 		switch op {
