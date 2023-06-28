@@ -16,7 +16,8 @@ var False = &object.Boolean{Value: false}
 type VM struct {
 	constants    []object.Object
 	instructions code.Instructions
-	stack        []object.Object
+	// stack, which owned the middle and result value of instructions
+	stack []object.Object
 	// stack pointer
 	sp int // Always points to the next value. Top of stack is stack[sp-1]
 }
@@ -25,11 +26,20 @@ type VM struct {
 func (vm *VM) Run() error {
 	// instruction pointer
 	fmt.Println("instructions: ", vm.instructions)
+	vm.instructions.PrintBytes()
+	fmt.Println("constants:")
+	for i := 0; i < len(vm.constants); i++ {
+		fmt.Println(vm.constants[i].Inspect())
+	}
 	for ip := 0; ip < len(vm.instructions); ip++ {
 		op := code.Opcode(vm.instructions[ip])
 		switch op {
 		case code.OpConstant:
+			fmt.Println("ip:", ip)
 			constIndex := code.ReadUint16(vm.instructions[ip+1:])
+			fmt.Println("byte0:", vm.instructions[ip+1])
+			fmt.Println("byte1:", vm.instructions[ip+2])
+			fmt.Println("constIndex:", constIndex)
 			ip += 2
 			err := vm.push(vm.constants[constIndex])
 			if err != nil {
@@ -67,6 +77,18 @@ func (vm *VM) Run() error {
 			if err != nil {
 				return err
 			}
+		case code.OpJump:
+			pos := int(code.ReadUint16(vm.instructions[ip+1:]))
+			ip = pos - 1 // bc we are in a loop
+		case code.OpJumpNotTruthy:
+			pos := int(code.ReadUint16(vm.instructions[ip+1:]))
+			ip += 2
+			condition := vm.pop()
+			if !isTruthy(condition) {
+                // jump to ALTERNATIVE
+				ip = pos - 1
+			}
+
 		}
 
 	}
@@ -202,4 +224,13 @@ func (vm *VM) executeMinusOperator() error {
 	}
 	value := operand.(*object.Integer).Value
 	return vm.push(&object.Integer{Value: -value})
+}
+
+func isTruthy(obj object.Object) bool {
+	switch obj := obj.(type) {
+	case *object.Boolean:
+		return obj.Value
+	default:
+		return true
+	}
 }

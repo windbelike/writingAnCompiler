@@ -185,6 +185,7 @@ func (c *Compiler) addConstant(obj object.Object) int {
 }
 
 // returns the starting position of the just-emitted instruction.
+// operands: operand index in constant pool
 func (c *Compiler) emit(op code.Opcode, operands ...int) int {
 	ins := code.Make(op, operands...)
 	pos := c.addInstruction(ins)

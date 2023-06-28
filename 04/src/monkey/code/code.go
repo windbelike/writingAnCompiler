@@ -7,6 +7,7 @@ import (
 )
 
 // Instructions is consisted of opcodes and its operands
+// big endian
 type Instructions []byte
 
 // Opcode: like a function
@@ -146,4 +147,8 @@ func (ins Instructions) fmtInstruction(def *Definition, operands []int) string {
 		return fmt.Sprintf("%s %d", def.Name, operands[0])
 	}
 	return fmt.Sprintf("ERROR: unhandled operandCount for %s\n", def.Name)
+}
+
+func (ins Instructions) PrintBytes() {
+    fmt.Printf("Instruction bytes:%b\n", ins)
 }
