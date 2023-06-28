@@ -26,14 +26,14 @@ type VM struct {
 // Heart of Virtual Machine: fetch-decode-execute cycle
 func (vm *VM) Run() error {
 	// instruction pointer
-	fmt.Println("instructions: ", vm.instructions)
-	vm.instructions.PrintBytes()
-	fmt.Println("constants:")
-	for i := 0; i < len(vm.constants); i++ {
-		fmt.Println(vm.constants[i].Inspect())
-	}
+	// fmt.Println("instructions: ", vm.instructions)
+	// vm.instructions.PrintBytes()
+	// fmt.Println("constants:")
+	// for i := 0; i < len(vm.constants); i++ {
+	// 	fmt.Println(vm.constants[i].Inspect())
+	// }
 	for ip := 0; ip < len(vm.instructions); ip++ {
-        // fmt.Println("ip:", ip)
+		// fmt.Println("ip:", ip)
 		op := code.Opcode(vm.instructions[ip])
 		switch op {
 		case code.OpConstant:
@@ -215,6 +215,8 @@ func (vm *VM) executeBangOperator() error {
 		return vm.push(False)
 	case False:
 		return vm.push(True)
+	case Null:
+		return vm.push(True)
 	default:
 		return vm.push(False)
 	}
@@ -233,6 +235,8 @@ func isTruthy(obj object.Object) bool {
 	switch obj := obj.(type) {
 	case *object.Boolean:
 		return obj.Value
+	case *object.Null:
+		return false
 	default:
 		return true
 	}
