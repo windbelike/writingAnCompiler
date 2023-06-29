@@ -10,9 +10,10 @@ import (
 
 type Compiler struct {
 	instructions        code.Instructions
-	constants           []object.Object // constants pool
+	constants           []object.Object // constants pool, will be copied to vm after compilation
 	lastInstruction     EmittedInstruction
 	previousInstruction EmittedInstruction
+	symbolTable         *SymbolTable // Noteworthy, it's a pointer type
 }
 
 func New() *Compiler {
@@ -21,7 +22,15 @@ func New() *Compiler {
 		constants:           []object.Object{},
 		lastInstruction:     EmittedInstruction{},
 		previousInstruction: EmittedInstruction{},
+		symbolTable:         NewSymbolTable(),
 	}
+}
+
+func NewWithState(s *SymbolTable, constants []object.Object) *Compiler {
+	compiler := New()
+	compiler.symbolTable = s
+	compiler.constants = constants
+	return compiler
 }
 
 func (c *Compiler) Bytecode() *Bytecode {
@@ -31,6 +40,7 @@ func (c *Compiler) Bytecode() *Bytecode {
 	}
 }
 
+// Compiler output
 type Bytecode struct {
 	Instructions code.Instructions
 	Constants    []object.Object
@@ -51,13 +61,20 @@ func (c *Compiler) Compile(node ast.Node) error {
 				return err
 			}
 		}
+	case *ast.LetStatement:
+		err := c.Compile(node.Value)
+		if err != nil {
+			return err
+		}
+		symbol := c.symbolTable.Define(node.Name.Value)
+		c.emit(code.OpSetGlobal, symbol.Index)
 	case *ast.ExpressionStatement:
 		err := c.Compile(node.Expression)
 		if err != nil {
 			return err
 		}
 		// Noteworthy: at the end of every expression statement
-		// emit a pop stack opcode
+		// , will emit a pop stack opcode
 		c.emit(code.OpPop)
 	case *ast.PrefixExpression:
 		err := c.Compile(node.Right)
@@ -163,6 +180,14 @@ func (c *Compiler) Compile(node ast.Node) error {
 		} else {
 			c.emit(code.OpFalse)
 		}
+	case *ast.Identifier:
+		symbol, ok := c.symbolTable.Resolve(node.Value)
+		if !ok {
+			// compile time error
+			return fmt.Errorf("undefined variable %s", node.Value)
+		}
+		c.emit(code.OpGetGlobal, symbol.Index)
+
 	}
 	return nil
 }

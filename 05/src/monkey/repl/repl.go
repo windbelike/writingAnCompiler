@@ -7,6 +7,7 @@ import (
 
 	"sawyer.com/v5/src/monkey/compiler"
 	"sawyer.com/v5/src/monkey/lexer"
+	"sawyer.com/v5/src/monkey/object"
 	"sawyer.com/v5/src/monkey/parser"
 	"sawyer.com/v5/src/monkey/vm"
 )
@@ -15,6 +16,11 @@ const PROMPT = ">> "
 
 func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
+    // slices are pointer type
+	constants := []object.Object{}
+	globals := make([]object.Object, vm.GlobalsSize)
+	symbolTable := compiler.NewSymbolTable()
+
 	for {
 		fmt.Fprintf(out, PROMPT)
 		scanned := scanner.Scan()
@@ -29,13 +35,13 @@ func Start(in io.Reader, out io.Writer) {
 			printParserErrors(out, p.Errors())
 			continue
 		}
-		comp := compiler.New()
+		comp := compiler.NewWithState(symbolTable, constants)
 		err := comp.Compile(program)
 		if err != nil {
 			fmt.Fprintf(out, "Woops! Compilation failed:\n %s\n", err)
 			continue
 		}
-		machine := vm.New(comp.Bytecode())
+		machine := vm.NewWithGlobalsStore(comp.Bytecode(), globals)
 		err = machine.Run()
 		if err != nil {
 			fmt.Fprintf(out, "Woops! Executing bytecode failed:\n %s\n", err)

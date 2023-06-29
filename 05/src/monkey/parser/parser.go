@@ -133,7 +133,7 @@ func (p *Parser) ParseProgram() *ast.Program {
 	return program
 }
 
-// In Monkey language there're only 3 Statements only
+// In Monkey language there're 3 Statements only
 func (p *Parser) parseStatement() ast.Statement {
 	switch p.curToken.Type {
 	case token.LET:
