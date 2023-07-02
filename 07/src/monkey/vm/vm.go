@@ -69,6 +69,9 @@ func (vm *VM) popFrame() *Frame {
 	return vm.frames[vm.framesIndex]
 }
 
+// It's a virtual machine frame implementation, differs to real machine frame implementation
+// Frame: instructions and its pointer
+// Call Frame / Stack Frame
 type Frame struct {
 	fn *object.CompiledFunction
 	ip int
@@ -189,6 +192,12 @@ func (vm *VM) Run() error {
 				return err
 			}
 		case code.OpReturnValue:
+            // function bytecode calling convention: 
+            // 1. pop return value if there's one
+            // 2. pop call frame
+            // 3. pop function literal
+            // 4. push return value
+
 			returnValue := vm.pop()
 			vm.popFrame()
 			vm.pop() // pop function literal
@@ -197,6 +206,7 @@ func (vm *VM) Run() error {
 				return err
 			}
 		case code.OpReturn:
+            // hitting no return statement
 			vm.popFrame()
 			vm.pop()
 			err := vm.push(Null)
