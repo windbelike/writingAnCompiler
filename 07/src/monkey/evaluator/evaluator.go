@@ -261,6 +261,7 @@ func evalBlockStatement(block *ast.BlockStatement, env *object.Environment) obje
 		}
 	}
 
+    // implicity return
 	// choose the final experssion as result
 	return result
 }
