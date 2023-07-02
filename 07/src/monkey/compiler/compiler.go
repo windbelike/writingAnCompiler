@@ -276,11 +276,11 @@ func (c *Compiler) Compile(node ast.Node) error {
 		if err != nil {
 			return err
 		}
-        // handle implicit return 
+		// handle implicit return
 		if c.lastInstructionIs(code.OpPop) {
 			c.replaceLastPopWithReturn()
 		}
-        // handle empty body function
+		// handle empty body function
 		if !c.lastInstructionIs(code.OpReturnValue) {
 			c.emit(code.OpReturn)
 		}
@@ -288,6 +288,13 @@ func (c *Compiler) Compile(node ast.Node) error {
 		// noteworthy, adding compiled functio to constant pool
 		compiledFn := &object.CompiledFunction{Instructions: instructions}
 		c.emit(code.OpConstant, c.addConstant(compiledFn))
+	case *ast.CallExpression:
+		err := c.Compile(node.Function)
+		if err != nil {
+			return err
+		}
+		c.emit(code.OpCall)
+
 	}
 	return nil
 }
