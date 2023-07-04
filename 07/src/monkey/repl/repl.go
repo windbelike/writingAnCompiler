@@ -37,7 +37,8 @@ func Start(in io.Reader, out io.Writer) {
 		}
 		comp := compiler.NewWithState(symbolTable, constants)
 		err := comp.Compile(program)
-		// fmt.Printf("constants: %v\n", comp.Bytecode().Constants)
+		// fmt.Printf("constants: %q\n", comp.Bytecode().Constants)
+        comp.Bytecode().PrintString()
 		if err != nil {
 			fmt.Fprintf(out, "Woops! Compilation failed:\n %s\n", err)
 			continue

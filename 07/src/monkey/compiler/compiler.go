@@ -14,7 +14,8 @@ type Compiler struct {
 	symbolTable *SymbolTable
 
 	// scope stack, for function implementation
-	scopes     []CompilationScope
+	scopes []CompilationScope
+	// index of current scope, indicates which code is running currently 
 	scopeIndex int
 }
 
@@ -27,7 +28,7 @@ type CompilationScope struct {
 }
 
 func New() *Compiler {
-	// main function
+	//main function
 	mainScope := CompilationScope{
 		instructions:        code.Instructions{},
 		lastInstruction:     EmittedInstruction{},
@@ -47,6 +48,7 @@ func NewWithState(s *SymbolTable, constants []object.Object) *Compiler {
 	return compiler
 }
 
+// handle scope and symbol table
 // e.g. enter a function scope
 func (c *Compiler) enterScope() {
 	scope := CompilationScope{
@@ -281,6 +283,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 		}
 		c.emit(code.OpIndex)
 	case *ast.FunctionLiteral:
+		// scope is defined along with the function literal is defined
 		c.enterScope()
 		err := c.Compile(node.Body)
 		if err != nil {
@@ -294,9 +297,10 @@ func (c *Compiler) Compile(node ast.Node) error {
 		if !c.lastInstructionIs(code.OpReturnValue) {
 			c.emit(code.OpReturn)
 		}
+        numLocals := c.symbolTable.numDefinitions
 		instructions := c.leaveScope()
-		// noteworthy, adding compiled functio to constant pool
-		compiledFn := &object.CompiledFunction{Instructions: instructions}
+		// noteworthy, adding compiled function to constant pool
+		compiledFn := &object.CompiledFunction{Instructions: instructions, NumLocals: numLocals}
 		c.emit(code.OpConstant, c.addConstant(compiledFn))
 	case *ast.CallExpression:
 		err := c.Compile(node.Function)
@@ -371,4 +375,28 @@ func (c *Compiler) replaceLastPopWithReturn() {
 	lastPos := c.scopes[c.scopeIndex].lastInstruction.Position
 	c.replaceInstruction(lastPos, code.Make(code.OpReturnValue))
 	c.scopes[c.scopeIndex].lastInstruction.Opcode = code.OpReturnValue
+}
+
+// todo debug mode only
+func (b *Bytecode) PrintString() {
+	// print constant
+    fmt.Println()
+    fmt.Println("============== constants of bytecode ============== ")
+	for i, c := range b.Constants {
+		switch c := c.(type) {
+		case *object.CompiledFunction:
+			fmt.Printf("%d %s \n%s", i, c.Type(), c.Instructions)
+		case *object.Integer:
+            fmt.Printf("%d %s %d\n", i, c.Type(), c.Value)
+		case *object.String:
+            fmt.Printf("%d %s %s\n", i, c.Type(), c.Value)
+        default:
+            fmt.Printf("unknown type %T\n", c)
+		}
+	}
+    fmt.Println()
+    fmt.Println("============== instructions of bytecode ============== ")
+	// print bytecode
+	fmt.Printf("%s", b.Instructions)
+    fmt.Println()
 }

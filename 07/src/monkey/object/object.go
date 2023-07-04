@@ -63,6 +63,7 @@ type Null struct{}
 func (n *Null) Type() ObjectType {
 	return NULL_OBJ
 }
+
 func (n *Null) Inspect() string {
 	return "null"
 }
@@ -253,6 +254,7 @@ func (h *Hash) Inspect() string {
 // CompiledFunction is an object
 type CompiledFunction struct {
 	Instructions code.Instructions
+    NumLocals int // indicate how many local bindings this function is going to create
 }
 
 func (cf *CompiledFunction) Type() ObjectType { return COMPILED_FUNCTION_OBJ }

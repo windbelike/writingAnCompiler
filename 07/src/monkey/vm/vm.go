@@ -25,13 +25,14 @@ type VM struct {
 	sp      int
 	globals []object.Object
 
+	// need frame slice to keep track of currently running function instructions
 	frames      []*Frame // stack frame
 	framesIndex int      // index of next executing frame
 }
 
 func New(bytecode *compiler.Bytecode) *VM {
 	mainFn := &object.CompiledFunction{Instructions: bytecode.Instructions}
-	mainFrame := NewFrame(mainFn)
+	mainFrame := NewFrame(mainFn, 0)
 
 	// main frame
 	frames := make([]*Frame, MaxFrames)
@@ -69,16 +70,19 @@ func (vm *VM) popFrame() *Frame {
 	return vm.frames[vm.framesIndex]
 }
 
+// A temporary storage that lives as long as a function call
 // It's a virtual machine frame implementation, differs to real machine frame implementation
 // Frame: instructions and its pointer
 // Call Frame / Stack Frame
 type Frame struct {
 	fn *object.CompiledFunction
 	ip int
+	// indicates the index of the stack currently being used
+	basePointer int
 }
 
-func NewFrame(fn *object.CompiledFunction) *Frame {
-	return &Frame{fn: fn, ip: -1}
+func NewFrame(fn *object.CompiledFunction, basePointer int) *Frame {
+	return &Frame{fn: fn, ip: -1, basePointer: basePointer}
 }
 
 func (f *Frame) Instructions() code.Instructions {
@@ -90,6 +94,7 @@ func (vm *VM) Run() error {
 	var ip int
 	var ins code.Instructions
 	var op code.Opcode
+	// run vm by looping the call frame slice
 	for vm.currentFrame().ip < len(vm.currentFrame().Instructions())-1 {
 		vm.currentFrame().ip++
 		ip = vm.currentFrame().ip
@@ -162,6 +167,21 @@ func (vm *VM) Run() error {
 			if err != nil {
 				return err
 			}
+		case code.OpSetLocal:
+			localIndex := code.ReadUint8(ins[ip+1:])
+			vm.currentFrame().ip += 1
+			frame := vm.currentFrame()
+			// filling the stack 'hole' by local bindings
+			vm.stack[frame.basePointer+int(localIndex)] = vm.pop()
+		case code.OpGetLocal:
+			localIndex := code.ReadUint8(ins[ip+1:])
+			vm.currentFrame().ip += 1
+			frame := vm.currentFrame()
+            // get local bindings
+			err := vm.push(vm.stack[frame.basePointer+int(localIndex)])
+			if err != nil {
+				return err
+			}
 		case code.OpArray:
 			numElements := int(code.ReadUint16(ins[ip+1:]))
 			vm.currentFrame().ip += 2
@@ -192,23 +212,26 @@ func (vm *VM) Run() error {
 				return err
 			}
 		case code.OpReturnValue:
-            // function bytecode calling convention: 
-            // 1. pop return value if there's one
-            // 2. pop call frame
-            // 3. pop function literal
-            // 4. push return value
+			// function bytecode calling convention:
+			// 1. pop return value if there's one
+			// 2. pop call frame
+			// 3. pop function literal
+			// 4. push return value
 
 			returnValue := vm.pop()
-			vm.popFrame()
-			vm.pop() // pop function literal
+
+            frame := vm.popFrame()
+            vm.sp = frame.basePointer - 1 // pop the function literal
+
 			err := vm.push(returnValue)
 			if err != nil {
 				return err
 			}
 		case code.OpReturn:
-            // hitting no return statement
-			vm.popFrame()
-			vm.pop()
+			// hitting no return statement
+            frame := vm.popFrame()
+            vm.sp = frame.basePointer - 1 // pop the function literal
+
 			err := vm.push(Null)
 			if err != nil {
 				return err
@@ -218,8 +241,10 @@ func (vm *VM) Run() error {
 			if !ok {
 				return fmt.Errorf("calling non-function")
 			}
-			frame := NewFrame(fn)
+            // mark base stack sp (basePointer)
+			frame := NewFrame(fn, vm.sp)
 			vm.pushFrame(frame)
+			vm.sp = frame.basePointer + fn.NumLocals
 		}
 
 	}
