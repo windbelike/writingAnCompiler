@@ -120,6 +120,7 @@ func Make(op Opcode, operands ...int) []byte {
 	return instruction
 }
 
+// Read operands of a opcode definition
 // The couterpart of Make
 // Decode bytecode instruction into operands
 // aka disassembler
