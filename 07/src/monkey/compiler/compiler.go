@@ -286,7 +286,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 		// scope is defined along with the function literal is defined
 		c.enterScope()
 
-        // define parameters
+		// define parameters
 		for _, p := range node.Parameters {
 			c.symbolTable.Define(p.Value)
 		}
@@ -307,7 +307,11 @@ func (c *Compiler) Compile(node ast.Node) error {
 		numLocals := c.symbolTable.numDefinitions
 		instructions := c.leaveScope()
 		// noteworthy, adding compiled function to constant pool
-		compiledFn := &object.CompiledFunction{Instructions: instructions, NumLocals: numLocals}
+		compiledFn := &object.CompiledFunction{
+			Instructions:  instructions,
+			NumLocals:     numLocals,
+			NumParameters: len(node.Parameters),
+		}
 		c.emit(code.OpConstant, c.addConstant(compiledFn))
 	case *ast.CallExpression:
 		err := c.Compile(node.Function)
@@ -315,6 +319,8 @@ func (c *Compiler) Compile(node ast.Node) error {
 			return err
 		}
 
+		// Equevilent to SetLocal
+		// Make local bindings in here
 		for _, a := range node.Arguments {
 			err := c.Compile(a)
 			if err != nil {

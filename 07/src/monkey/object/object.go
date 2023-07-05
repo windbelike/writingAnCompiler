@@ -255,6 +255,7 @@ func (h *Hash) Inspect() string {
 type CompiledFunction struct {
 	Instructions code.Instructions
     NumLocals int // indicate how many local bindings this function is going to create
+    NumParameters int
 }
 
 func (cf *CompiledFunction) Type() ObjectType { return COMPILED_FUNCTION_OBJ }
