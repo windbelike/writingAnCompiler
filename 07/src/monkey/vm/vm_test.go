@@ -521,7 +521,6 @@ func TestCallingFunctionsWithWrongArguments(t *testing.T) {
 		}
 		vm := New(comp.Bytecode())
 		err = vm.Run()
-		fmt.Println("error in test: ", err)
 		if err == nil {
 			t.Fatalf("expected VM error but resulted in none.")
 		}
