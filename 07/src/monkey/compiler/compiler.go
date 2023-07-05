@@ -15,7 +15,7 @@ type Compiler struct {
 
 	// scope stack, for function implementation
 	scopes []CompilationScope
-	// index of current scope, indicates which code is running currently 
+	// index of current scope, indicates which code is running currently
 	scopeIndex int
 }
 
@@ -285,10 +285,17 @@ func (c *Compiler) Compile(node ast.Node) error {
 	case *ast.FunctionLiteral:
 		// scope is defined along with the function literal is defined
 		c.enterScope()
+
+        // define parameters
+		for _, p := range node.Parameters {
+			c.symbolTable.Define(p.Value)
+		}
+
 		err := c.Compile(node.Body)
 		if err != nil {
 			return err
 		}
+
 		// handle implicit return
 		if c.lastInstructionIs(code.OpPop) {
 			c.replaceLastPopWithReturn()
@@ -297,7 +304,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 		if !c.lastInstructionIs(code.OpReturnValue) {
 			c.emit(code.OpReturn)
 		}
-        numLocals := c.symbolTable.numDefinitions
+		numLocals := c.symbolTable.numDefinitions
 		instructions := c.leaveScope()
 		// noteworthy, adding compiled function to constant pool
 		compiledFn := &object.CompiledFunction{Instructions: instructions, NumLocals: numLocals}
@@ -307,8 +314,15 @@ func (c *Compiler) Compile(node ast.Node) error {
 		if err != nil {
 			return err
 		}
-		c.emit(code.OpCall)
 
+		for _, a := range node.Arguments {
+			err := c.Compile(a)
+			if err != nil {
+				return err
+			}
+		}
+
+		c.emit(code.OpCall, len(node.Arguments))
 	}
 	return nil
 }
@@ -380,23 +394,23 @@ func (c *Compiler) replaceLastPopWithReturn() {
 // todo debug mode only
 func (b *Bytecode) PrintString() {
 	// print constant
-    fmt.Println()
-    fmt.Println("============== constants of bytecode ============== ")
+	fmt.Println()
+	fmt.Println("============== constants of bytecode ============== ")
 	for i, c := range b.Constants {
 		switch c := c.(type) {
 		case *object.CompiledFunction:
 			fmt.Printf("%d %s \n%s", i, c.Type(), c.Instructions)
 		case *object.Integer:
-            fmt.Printf("%d %s %d\n", i, c.Type(), c.Value)
+			fmt.Printf("%d %s %d\n", i, c.Type(), c.Value)
 		case *object.String:
-            fmt.Printf("%d %s %s\n", i, c.Type(), c.Value)
-        default:
-            fmt.Printf("unknown type %T\n", c)
+			fmt.Printf("%d %s %s\n", i, c.Type(), c.Value)
+		default:
+			fmt.Printf("unknown type %T\n", c)
 		}
 	}
-    fmt.Println()
-    fmt.Println("============== instructions of bytecode ============== ")
+	fmt.Println()
+	fmt.Println("============== instructions of bytecode ============== ")
 	// print bytecode
 	fmt.Printf("%s", b.Instructions)
-    fmt.Println()
+	fmt.Println()
 }
