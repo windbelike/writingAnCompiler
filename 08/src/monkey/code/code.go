@@ -44,6 +44,7 @@ const (
 	OpReturn // return null
 	OpGetLocal
 	OpSetLocal
+	OpGetBuiltin
 )
 
 // definition for opcode
@@ -80,6 +81,7 @@ var definitions = map[Opcode]*Definition{
 	OpReturn:        {"OpReturn", []int{}},
 	OpGetLocal:      {"OpGetLocal", []int{1}},
 	OpSetLocal:      {"OpSetLocal", []int{1}},
+	OpGetBuiltin:    {"OpGetBuiltin", []int{1}},
 }
 
 // loop up opcode definition
