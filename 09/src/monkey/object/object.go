@@ -255,6 +255,7 @@ func (h *Hash) Inspect() string {
 // CompiledFunction is an object
 type CompiledFunction struct {
 	Instructions  code.Instructions
+    // NumLocals = len(parameters) + len(locals)
 	NumLocals     int // indicate how many local bindings this function is going to create
 	NumParameters int
 }
@@ -266,6 +267,7 @@ func (cf *CompiledFunction) Inspect() string {
 
 // Closure is an object
 // Treat every function as a closure
+// Closure: function literal + function's free variables
 type Closure struct {
 	Fn   *CompiledFunction
 	Free []Object // variables not belong to fn

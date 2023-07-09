@@ -309,15 +309,16 @@ func (c *Compiler) Compile(node ast.Node) error {
 		}
         // noteworthy: save free variables before leaving current scope
 		freeSymbols := c.symbolTable.FreeSymbols
+        // numLocals = len(parameter) + len(locals)
 		numLocals := c.symbolTable.numDefinitions
 		instructions := c.leaveScope()
 
-        // free variables are defined at compile time
+        // emit free variables before emitting function literal
 		for _, s := range freeSymbols {
 			c.loadSymbol(s)
 		}
 
-		// noteworthy, adding compiled function to constant pool
+		// adding compiled function to constant pool
 		compiledFn := &object.CompiledFunction{
 			Instructions:  instructions,
 			NumLocals:     numLocals,
@@ -333,7 +334,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 		}
 
 		// Equevilent to SetLocal
-		// Make local bindings in here
+		// Make local bindings here
 		for _, a := range node.Arguments {
 			err := c.Compile(a)
 			if err != nil {
