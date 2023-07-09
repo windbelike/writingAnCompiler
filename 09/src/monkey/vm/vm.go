@@ -32,7 +32,8 @@ type VM struct {
 
 func New(bytecode *compiler.Bytecode) *VM {
 	mainFn := &object.CompiledFunction{Instructions: bytecode.Instructions}
-	mainFrame := NewFrame(mainFn, 0)
+	mainClosure := &object.Closure{Fn: mainFn}
+	mainFrame := NewFrame(mainClosure, 0)
 
 	// main frame
 	frames := make([]*Frame, MaxFrames)
@@ -75,18 +76,24 @@ func (vm *VM) popFrame() *Frame {
 // Frame: instructions and its pointer
 // Call Frame / Stack Frame
 type Frame struct {
-	fn *object.CompiledFunction
+	// fn *object.CompiledFunction
+	cl *object.Closure
 	ip int
 	// indicates the index of the stack currently being used
 	basePointer int
 }
 
-func NewFrame(fn *object.CompiledFunction, basePointer int) *Frame {
-	return &Frame{fn: fn, ip: -1, basePointer: basePointer}
+func NewFrame(cl *object.Closure, basePointer int) *Frame {
+	f := &Frame{
+		cl:          cl,
+		ip:          -1,
+		basePointer: basePointer,
+	}
+	return f
 }
 
 func (f *Frame) Instructions() code.Instructions {
-	return f.fn.Instructions
+	return f.cl.Fn.Instructions
 }
 
 // Heart of Virtual Machine: fetch-decode-execute cycle
@@ -102,9 +109,19 @@ func (vm *VM) Run() error {
 		op = code.Opcode(ins[ip])
 		switch op {
 		case code.OpConstant:
+			// noteworthy: function literal is a constant
 			constIndex := code.ReadUint16(ins[ip+1:])
 			vm.currentFrame().ip += 2
 			err := vm.push(vm.constants[constIndex])
+			if err != nil {
+				return err
+			}
+		case code.OpClosure:
+			// noteworthy: function implemented by closure
+			constIndex := code.ReadUint16(ins[ip+1:])
+			_ = code.ReadUint8(ins[ip+3:])
+			vm.currentFrame().ip += 3
+			err := vm.pushClosure(int(constIndex))
 			if err != nil {
 				return err
 			}
@@ -258,17 +275,17 @@ func (vm *VM) Run() error {
 	return nil
 }
 
-func (vm *VM) callFunction(fn *object.CompiledFunction, numArgs int) error {
-	if numArgs != fn.NumParameters {
-		return fmt.Errorf("wrong number of arguments: want=%d, got=%d",
-			fn.NumParameters, numArgs)
-	}
-	frame := NewFrame(fn, vm.sp-numArgs)
-	vm.pushFrame(frame)
-	// parameters are local bindings
-	vm.sp = frame.basePointer + fn.NumLocals
-	return nil
-}
+// func (vm *VM) callFunction(fn *object.CompiledFunction, numArgs int) error {
+// 	if numArgs != fn.NumParameters {
+// 		return fmt.Errorf("wrong number of arguments: want=%d, got=%d",
+// 			fn.NumParameters, numArgs)
+// 	}
+// 	frame := NewFrame(fn, vm.sp-numArgs)
+// 	vm.pushFrame(frame)
+// 	// parameters are local bindings
+// 	vm.sp = frame.basePointer + fn.NumLocals
+// 	return nil
+// }
 
 func (vm *VM) callBuiltin(builtin *object.Builtin, numArgs int) error {
 	args := vm.stack[vm.sp-numArgs : vm.sp]
@@ -288,8 +305,8 @@ func (vm *VM) executeCall(numArgs int) error {
 	// -1 for pop the function literal
 	callee := vm.stack[vm.sp-1-numArgs]
 	switch callee := callee.(type) {
-	case *object.CompiledFunction:
-		return vm.callFunction(callee, numArgs)
+	case *object.Closure:
+		return vm.callClosure(callee, numArgs)
 	case *object.Builtin:
 		return vm.callBuiltin(callee, numArgs)
 	default:
@@ -501,4 +518,25 @@ func (vm *VM) executeHashIndex(hash, index object.Object) error {
 		return vm.push(Null)
 	}
 	return vm.push(pair.Value)
+}
+
+func (vm *VM) callClosure(cl *object.Closure, numArgs int) error {
+	if numArgs != cl.Fn.NumParameters {
+		return fmt.Errorf("wrong number of arguments: want=%d, got=%d", cl.Fn.NumParameters, numArgs)
+	}
+	basePointer := vm.sp - numArgs
+	frame := NewFrame(cl, basePointer)
+	vm.pushFrame(frame)
+	vm.sp = frame.basePointer + cl.Fn.NumLocals
+	return nil
+}
+
+func (vm *VM) pushClosure(constIndex int) error {
+	constant := vm.constants[constIndex]
+	function, ok := constant.(*object.CompiledFunction)
+	if !ok {
+		return fmt.Errorf("not a function: %+v", constant)
+	}
+	closure := &object.Closure{Fn: function}
+	return vm.push(closure)
 }

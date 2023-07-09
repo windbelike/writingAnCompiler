@@ -34,7 +34,7 @@ func New() *Compiler {
 		lastInstruction:     EmittedInstruction{},
 		previousInstruction: EmittedInstruction{},
 	}
-	// builtin function on global symbol table.
+	// builtin functions live on global symbol table.
 	symbolTable := NewSymbolTable()
 	for i, v := range object.Builtins {
 		symbolTable.DefineBuiltin(i, v.Name)
@@ -286,7 +286,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 		}
 		c.emit(code.OpIndex)
 	case *ast.FunctionLiteral:
-		// scope is defined along with the function literal is defined
+		// scope is defined when the function literal is defined
 		c.enterScope()
 
 		// define parameters
@@ -307,15 +307,25 @@ func (c *Compiler) Compile(node ast.Node) error {
 		if !c.lastInstructionIs(code.OpReturnValue) {
 			c.emit(code.OpReturn)
 		}
+        // noteworthy: save free variables before leaving current scope
+		freeSymbols := c.symbolTable.FreeSymbols
 		numLocals := c.symbolTable.numDefinitions
 		instructions := c.leaveScope()
+
+        // free variables are defined at compile time
+		for _, s := range freeSymbols {
+			c.loadSymbol(s)
+		}
+
 		// noteworthy, adding compiled function to constant pool
 		compiledFn := &object.CompiledFunction{
 			Instructions:  instructions,
 			NumLocals:     numLocals,
 			NumParameters: len(node.Parameters),
 		}
-		c.emit(code.OpConstant, c.addConstant(compiledFn))
+		fnIndex := c.addConstant(compiledFn)
+		c.emit(code.OpClosure, fnIndex, len(freeSymbols))
+		// c.emit(code.OpConstant, c.addConstant(compiledFn))
 	case *ast.CallExpression:
 		err := c.Compile(node.Function)
 		if err != nil {
@@ -432,5 +442,7 @@ func (c *Compiler) loadSymbol(s Symbol) {
 		c.emit(code.OpGetLocal, s.Index)
 	case BuiltinScope:
 		c.emit(code.OpGetBuiltin, s.Index)
+	case FreeScope:
+		c.emit(code.OpGetFree, s.Index)
 	}
 }

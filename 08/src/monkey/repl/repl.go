@@ -41,7 +41,7 @@ func Start(in io.Reader, out io.Writer) {
 		}
 		comp := compiler.NewWithState(symbolTable, constants)
 		err := comp.Compile(program)
-		// comp.Bytecode().PrintString()
+		comp.Bytecode().PrintString()
 		if err != nil {
 			fmt.Fprintf(out, "Woops! Compilation failed:\n %s\n", err)
 			continue
@@ -57,6 +57,9 @@ func Start(in io.Reader, out io.Writer) {
 		// io.WriteString(out, stackTop.Inspect())
 		// io.WriteString(out, "\n")
 		lastPopped := machine.LastPoppedStackElem()
+        if lastPopped == nil {
+            fmt.Println("lasPopped is nil")
+        }
 		io.WriteString(out, lastPopped.Inspect())
 		io.WriteString(out, "\n")
 	}
