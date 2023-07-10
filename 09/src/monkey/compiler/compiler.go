@@ -108,8 +108,8 @@ func (c *Compiler) Compile(node ast.Node) error {
 			}
 		}
 	case *ast.LetStatement:
-        // enable recursive function
-        symbol := c.symbolTable.Define(node.Name.Value)
+		// enable recursive function
+		symbol := c.symbolTable.Define(node.Name.Value)
 		err := c.Compile(node.Value)
 		if err != nil {
 			return err
@@ -291,6 +291,11 @@ func (c *Compiler) Compile(node ast.Node) error {
 		// scope is defined when the function literal is defined
 		c.enterScope()
 
+		// save function's name
+		if node.Name != "" {
+			c.symbolTable.DefineFunctionName(node.Name)
+		}
+
 		// define parameters
 		for _, p := range node.Parameters {
 			c.symbolTable.Define(p.Value)
@@ -309,17 +314,17 @@ func (c *Compiler) Compile(node ast.Node) error {
 		if !c.lastInstructionIs(code.OpReturnValue) {
 			c.emit(code.OpReturn)
 		}
-        // noteworthy: save free variables before leaving current scope
+		// noteworthy: save free variables before leaving current scope
 		freeSymbols := c.symbolTable.FreeSymbols
-        // numLocals = len(parameter) + len(locals)
+		// numLocals = len(parameter) + len(locals)
 		numLocals := c.symbolTable.numDefinitions
 		instructions := c.leaveScope()
 
-        // put free variables as locals on the stack before emitting function literal
-        // when to pop these free variables???
-        // answear: the time reaches enclosed scope's return statement
+		// put free variables as locals on the stack before emitting function literal
+		// when to pop these free variables???
+		// answear: the time reaches enclosed scope's return statement
 		for _, s := range freeSymbols {
-            fmt.Println("load free symbols:", s)
+			// fmt.Println("load free symbols:", s)
 			c.loadSymbol(s)
 		}
 
@@ -450,5 +455,7 @@ func (c *Compiler) loadSymbol(s Symbol) {
 		c.emit(code.OpGetBuiltin, s.Index)
 	case FreeScope:
 		c.emit(code.OpGetFree, s.Index)
+	case FunctionScope:
+		c.emit(code.OpCurrentClosure)
 	}
 }

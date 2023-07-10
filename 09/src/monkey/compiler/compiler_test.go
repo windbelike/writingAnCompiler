@@ -996,7 +996,7 @@ let countDown = fn(x) { countDown(x - 1); }; countDown(1);
 			expectedConstants: []interface{}{
 				1,
 				[]code.Instructions{
-                    code.Make(code.OpCurrentClosure), // origin: OpGetGlobal
+					code.Make(code.OpCurrentClosure), // origin: OpGetGlobal(function literal)
 					code.Make(code.OpGetLocal, 0),
 					code.Make(code.OpConstant, 0),
 					code.Make(code.OpSub),
@@ -1010,6 +1010,40 @@ let countDown = fn(x) { countDown(x - 1); }; countDown(1);
 				code.Make(code.OpGetGlobal, 0),
 				code.Make(code.OpConstant, 2),
 				code.Make(code.OpCall, 1),
+				code.Make(code.OpPop),
+			}},
+		{
+			input: `
+               let wrapper = fn() {
+                   let countDown = fn(x) { countDown(x - 1); };
+                   countDown(1);
+                };
+                wrapper();
+`,
+			expectedConstants: []interface{}{
+				1,
+				[]code.Instructions{
+                    code.Make(code.OpCurrentClosure), // origin: OpGetGlobal
+					code.Make(code.OpGetLocal, 0),
+					code.Make(code.OpConstant, 0),
+					code.Make(code.OpSub),
+					code.Make(code.OpCall, 1),
+					code.Make(code.OpReturnValue),
+				},
+				1,
+				[]code.Instructions{
+					code.Make(code.OpClosure, 1, 0),
+					code.Make(code.OpSetLocal, 0),
+					code.Make(code.OpGetLocal, 0),
+					code.Make(code.OpConstant, 2),
+					code.Make(code.OpCall, 1),
+					code.Make(code.OpReturnValue),
+				}},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpClosure, 3, 0),
+				code.Make(code.OpSetGlobal, 0),
+				code.Make(code.OpGetGlobal, 0),
+				code.Make(code.OpCall, 0),
 				code.Make(code.OpPop),
 			}},
 	}

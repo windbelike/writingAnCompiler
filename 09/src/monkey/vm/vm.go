@@ -125,6 +125,13 @@ func (vm *VM) Run() error {
 			if err != nil {
 				return err
 			}
+		case code.OpCurrentClosure:
+            // recursive closure
+			currentClosure := vm.currentFrame().cl
+			err := vm.push(currentClosure)
+			if err != nil {
+				return err
+			}
 		case code.OpAdd, code.OpSub, code.OpMul, code.OpDiv:
 			err := vm.executeBinaryOperation(op)
 			if err != nil {
@@ -559,11 +566,11 @@ func (vm *VM) pushClosure(constIndex int, numFree int) error {
 }
 
 func (vm *VM) PrintStack() {
-    fmt.Println("PrintStack current sp:", vm.sp)
-    for i, s := range vm.stack {
-        if s == nil {
-            continue
-        }
-        fmt.Printf("%d %v %T\n", i, s, s)
-    }
+	fmt.Println("PrintStack current sp:", vm.sp)
+	for i, s := range vm.stack {
+		if s == nil {
+			continue
+		}
+		fmt.Printf("%d %v %T\n", i, s, s)
+	}
 }
