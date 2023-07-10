@@ -875,8 +875,8 @@ func TestClosures(t *testing.T) {
 `,
 			expectedConstants: []interface{}{
 				[]code.Instructions{
-					code.Make(code.OpGetFree, 0),
-					code.Make(code.OpGetLocal, 0),
+					code.Make(code.OpGetFree, 0),  // a
+					code.Make(code.OpGetLocal, 0), // b
 					code.Make(code.OpAdd),
 					code.Make(code.OpReturnValue),
 				},
@@ -984,5 +984,35 @@ func TestClosures(t *testing.T) {
 			},
 		},
 	}
+	runCompilerTests(t, tests)
+}
+
+func TestRecursiveFunctions(t *testing.T) {
+	tests := []compilerTestCase{
+		{
+			input: `
+let countDown = fn(x) { countDown(x - 1); }; countDown(1);
+`,
+			expectedConstants: []interface{}{
+				1,
+				[]code.Instructions{
+                    code.Make(code.OpCurrentClosure), // origin: OpGetGlobal
+					code.Make(code.OpGetLocal, 0),
+					code.Make(code.OpConstant, 0),
+					code.Make(code.OpSub),
+					code.Make(code.OpCall, 1),
+					code.Make(code.OpReturnValue),
+				},
+				1},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpClosure, 1, 0),
+				code.Make(code.OpSetGlobal, 0),
+				code.Make(code.OpGetGlobal, 0),
+				code.Make(code.OpConstant, 2),
+				code.Make(code.OpCall, 1),
+				code.Make(code.OpPop),
+			}},
+	}
+
 	runCompilerTests(t, tests)
 }

@@ -46,8 +46,11 @@ const (
 	OpSetLocal
 	OpGetBuiltin
 	OpClosure
-    // variables neither defined in scope nor as a parameter
+	// variables neither defined in scope nor as a parameter
 	OpGetFree
+	// when meeting self-reference closure,
+	// instead of emmiting OpGetFree, we emit this:
+	OpCurrentClosure
 )
 
 // definition for opcode
@@ -86,8 +89,9 @@ var definitions = map[Opcode]*Definition{
 	OpSetLocal:      {"OpSetLocal", []int{1}},
 	OpGetBuiltin:    {"OpGetBuiltin", []int{1}},
 	// 2 operands, 0: the const pool index of the  compilred func, 1: indicates how many free variables sit on the stack
-	OpClosure: {"OpClosure", []int{2, 1}},
-	OpGetFree: {"OpGetFree", []int{1}},
+	OpClosure:        {"OpClosure", []int{2, 1}},
+	OpGetFree:        {"OpGetFree", []int{1}},
+	OpCurrentClosure: {"OpCurrentClosure", []int{}},
 }
 
 // loop up opcode definition

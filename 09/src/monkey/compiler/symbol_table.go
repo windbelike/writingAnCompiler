@@ -59,8 +59,10 @@ func (s *SymbolTable) Define(name string) Symbol {
 //		return obj, ok
 //	}
 func (s *SymbolTable) Resolve(name string) (Symbol, bool) {
+    // resolve as locals(parameters + locals)
 	obj, ok := s.store[name]
 	if !ok && s.Outer != nil {
+        // resolve as outers, could be free variable, global variable or buitins
 		obj, ok = s.Outer.Resolve(name)
         // if it's free variable, then it has to be in outer scope
 		if !ok {
@@ -70,6 +72,7 @@ func (s *SymbolTable) Resolve(name string) (Symbol, bool) {
 			return obj, ok
 		}
         // noteworthy: free variables are defined when being resolved
+        // resolve as free variables
 		free := s.defineFree(obj)
 		return free, true
 	}
@@ -83,7 +86,9 @@ func (s *SymbolTable) DefineBuiltin(index int, name string) Symbol {
 }
 
 func (s *SymbolTable) defineFree(original Symbol) Symbol {
+    // original is a local in outer scope
 	s.FreeSymbols = append(s.FreeSymbols, original)
+    // save original as free in inner scope 
 	symbol := Symbol{Name: original.Name, Index: len(s.FreeSymbols) - 1}
 	symbol.Scope = FreeScope
 	s.store[original.Name] = symbol

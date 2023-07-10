@@ -557,3 +557,13 @@ func (vm *VM) pushClosure(constIndex int, numFree int) error {
 	// put function literial on stack
 	return vm.push(closure)
 }
+
+func (vm *VM) PrintStack() {
+    fmt.Println("PrintStack current sp:", vm.sp)
+    for i, s := range vm.stack {
+        if s == nil {
+            continue
+        }
+        fmt.Printf("%d %v %T\n", i, s, s)
+    }
+}

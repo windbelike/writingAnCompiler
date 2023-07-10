@@ -108,11 +108,13 @@ func (c *Compiler) Compile(node ast.Node) error {
 			}
 		}
 	case *ast.LetStatement:
+        // enable recursive function
+        symbol := c.symbolTable.Define(node.Name.Value)
 		err := c.Compile(node.Value)
 		if err != nil {
 			return err
 		}
-		symbol := c.symbolTable.Define(node.Name.Value)
+		// symbol := c.symbolTable.Define(node.Name.Value)
 		if symbol.Scope == GlobalScope {
 			c.emit(code.OpSetGlobal, symbol.Index)
 		} else {
@@ -313,8 +315,11 @@ func (c *Compiler) Compile(node ast.Node) error {
 		numLocals := c.symbolTable.numDefinitions
 		instructions := c.leaveScope()
 
-        // emit free variables before emitting function literal
+        // put free variables as locals on the stack before emitting function literal
+        // when to pop these free variables???
+        // answear: the time reaches enclosed scope's return statement
 		for _, s := range freeSymbols {
+            fmt.Println("load free symbols:", s)
 			c.loadSymbol(s)
 		}
 
