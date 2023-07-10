@@ -43,7 +43,7 @@ func runVmTests(t *testing.T, tests []vmTestCase) {
 		if err != nil {
 			t.Fatalf("compiler error: %s", err)
 		}
-        // print constants
+		// print constants
 		for i, constant := range comp.Bytecode().Constants {
 			fmt.Printf("CONSTANT %d %p (%T):\n", i, constant, constant)
 			switch constant := constant.(type) {
@@ -701,10 +701,10 @@ wrapper();
 			expected: 0,
 		},
 		{
-            // Failed Detail:
-            // countDown is self-reference closure
-            // in 'let countDown = ...'
-            // OpGetLocal happends before OpSetLocal, for closure literial definition reasons
+			// Failed Detail:
+			// countDown is self-reference closure
+			// in 'let countDown = ...'
+			// OpGetLocal happends before OpSetLocal, for closure literial definition reasons
 			input: `
            let wrapper = fn() {
                let countDown = fn(x) {
@@ -718,6 +718,28 @@ wrapper();
            wrapper();
            `,
 			expected: 0,
+		},
+	}
+	runVmTests(t, tests)
+}
+
+func TestRecursiveFibonacci(t *testing.T) {
+	tests := []vmTestCase{
+		{
+			input: `
+           let fibonacci = fn(x) {
+               if (x == 0) {
+                   return 0;
+               } else {
+                   if (x == 1) {
+                       return 1;
+                   } else {
+                       fibonacci(x - 1) + fibonacci(x - 2);
+                    } }
+           };
+           fibonacci(15);
+           `,
+			expected: 610,
 		},
 	}
 	runVmTests(t, tests)

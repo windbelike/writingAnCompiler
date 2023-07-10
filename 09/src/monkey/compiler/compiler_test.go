@@ -1023,7 +1023,7 @@ let countDown = fn(x) { countDown(x - 1); }; countDown(1);
 			expectedConstants: []interface{}{
 				1,
 				[]code.Instructions{
-                    code.Make(code.OpCurrentClosure), // origin: OpGetGlobal
+                    code.Make(code.OpCurrentClosure), 
 					code.Make(code.OpGetLocal, 0),
 					code.Make(code.OpConstant, 0),
 					code.Make(code.OpSub),
