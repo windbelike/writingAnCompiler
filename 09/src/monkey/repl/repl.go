@@ -41,7 +41,7 @@ func Start(in io.Reader, out io.Writer) {
 		}
 		comp := compiler.NewWithState(symbolTable, constants)
 		err := comp.Compile(program)
-		comp.Bytecode().PrintString()
+		// comp.Bytecode().PrintString()
 		if err != nil {
 			fmt.Fprintf(out, "Woops! Compilation failed:\n %s\n", err)
 			continue
@@ -53,7 +53,7 @@ func Start(in io.Reader, out io.Writer) {
 			fmt.Fprintf(out, "Woops! Executing bytecode failed:\n %s\n", err)
 			continue
 		}
-        machine.PrintStack()
+        // machine.PrintStack()
 		// stackTop := machine.StackTop()
 		// io.WriteString(out, stackTop.Inspect())
 		// io.WriteString(out, "\n")
